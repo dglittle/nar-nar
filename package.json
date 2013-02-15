@@ -1,0 +1,22 @@
+{
+  "name": "february-fire",
+  "version": "0.0.1",
+  "dependencies": {
+    "express": "2.5.x",
+    "mongojs": "*",
+    "passport": "*",
+    "passport-oauth": "*",
+    "node-odesk": "*",
+    "fibers": "*",
+    "connect-mongo": "*",
+
+    "imap": "*",
+    "mailparser": "*",
+
+    "csv": "*"
+  },
+  "engines": {
+    "node": "0.8.x",
+    "npm": "1.1.x"
+  }
+}

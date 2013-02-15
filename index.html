@@ -1,0 +1,168 @@
+<html>
+<head>
+<title>Hello</title>
+<style>
+
+.fill {
+    width: 100%;
+    height: 100%;
+}
+
+table {
+    border-collapse: collapse;
+}
+th, td {
+    padding: 0;
+}
+
+.question {
+}
+
+.category {
+    font-size: small;
+    color: blue;
+}
+
+</style>
+</head>
+<body>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script src="https://raw.github.com/dglittle/myutil/master/u.js"></script>
+<script src="https://raw.github.com/dglittle/myutil/master/jquery.timeago.js"></script>
+<script>
+
+g_version = 1
+
+function onError(msg) {
+    var div = $('<div style="padding:20px"/>')
+    div.append($('<span/>').text(msg || "Oops. Not sure what happened."))
+    div.append($('<br/>'))
+    div.append($('<a href="#"/>').text("Please refresh the page.").click(function (e) {
+        e.preventDefault()
+        location.reload()
+    }))
+    _.dialog(div)
+}
+
+var g_rpc = []
+
+function rpc(func, arg, cb) {
+    if (!func) {
+        var save_rpc = g_rpc
+        g_rpc = []
+        $.ajax({
+            url : '/rpc',
+            type : 'post',
+            data : _.json(_.map(save_rpc, function (e) { return e.payload })),
+            success : function (r) {
+                for (var i = 0; i < r.length; i++) {
+                    save_rpc[i].cb(r[i])
+                }
+            },
+            error : function () {
+                onError()
+            }
+        })
+    } else {
+        if (g_rpc.length == 0) {
+            g_rpc.push({
+                payload : { func : "getVersion" },
+                cb : function (r) {
+                    if (r != g_version) onError('This interface has been updated.')
+                }
+            })
+        }
+        g_rpc.push({
+            payload : { func : func, arg : arg },
+            cb : cb
+        })
+    }
+}
+
+function rpc_getUser() {
+    rpc('getUser', null, function (user) {
+        g_user = user
+        var s = 'welcome ' + user.name
+        g_upperRight.text(s)
+    })
+}
+
+function drawTask(task) {
+    var img = $('<img style="float:left;min-width:133px;min-height:100px;border:1px solid black"/>').attr('src', task.img || '')
+
+    var side = $('<div style="margin-left:10px;min-width:133;float:left"/>')
+    side.append($('<div/>').text(task.name))
+    side.append($('<div/>').text(task.username))
+    var buttons = $('<div style="margin-top:10px"/>')
+    side.append(buttons)
+
+    function setAcceptRejectButtons() {
+        var div = $('<div/>')
+        div.append($('<button style="height:4em;background:lightgreen"/>').text('accept').click(function () {
+            rpc('submit', { task : task._id, accept : true }, function () {})
+            rpc()
+            setUndoButton('accepted')
+        }))
+        div.append($('<button style="height:4em;background:pink"/>').text('reject').click(function () {
+            window.open(task.obo, '_blank')
+            window.focus() 
+            rpc('submit', { task : task._id, accept : false }, function () {})
+            rpc()
+            setUndoButton('rejected')
+        }))
+        buttons.empty().append(div)
+    }
+
+    function setUndoButton(msg) {
+        var div = $('<div/>')
+        div.append($('<span style="font-weight:bold;color:' + (msg == 'accepted' ? 'green' : 'red') + '"/>').text(msg))
+        div.append($('<button style="height:4em;background:lightblue"/>').text('undo').click(function () {
+            rpc('submit', { task : task._id, accept : null }, function () {})
+            rpc()
+            setAcceptRejectButtons()
+        }))
+        buttons.empty().append(div)
+    }
+
+    if (task.accept == null) {
+        setAcceptRejectButtons()
+    } else {
+        setUndoButton(task.accept ? 'accepted' : 'rejected')
+    }
+
+    return _.splitHorz(null, null, img, side, 0).css({
+        float : 'left',
+        margin : '10px'
+    })
+}
+
+function rpc_grabBatch(forceNew) {
+    rpc('grabBatch', forceNew, function (tasks) {
+        var div = $('<div/>')
+        _.each(tasks, function (task) {
+            div.append(drawTask(task))
+        })
+        div.append($('<div style="clear:both"/>'))
+        div.append($('<button style="margin:10px;width:133px;height:4em;background:lightblue"/>').html('done, grab&nbsp;more&nbsp;tasks').click(function () {
+            rpc_grabBatch(true)
+            rpc()
+        }))
+        g_output.empty().append(div)
+    })
+}
+
+$(function () {
+    g_upperRight = $('<div style="float:right"/>')
+    g_output = $('<div class="fill"/>')
+
+    $('body').append(_.splitVert(0.01, null, g_upperRight, g_output))
+
+    rpc_getUser()
+    rpc_grabBatch()
+    rpc()
+})
+
+</script>
+
+</body>
+</html>
