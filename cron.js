@@ -1,4 +1,15 @@
 
+function logError(err, notes) {
+    console.log('error: ' + (err.stack || err))
+    console.log('notes: ' + notes)
+}
+
+process.on('uncaughtException', function (err) {
+    try {
+        logError(err)
+    } catch (e) {}
+})
+
 require('./u.js')
 require('./nodeutil.js')
 

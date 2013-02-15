@@ -39,4 +39,8 @@ heroku config:set GMAIL_PASS=do_not_check_into_github
 git push heroku master
 heroku open
 heroku ps:scale web=2
+
+heroku addons:add scheduler:standard
+heroku addons:open scheduler
+	add "node cron.js" to run every 10 minutes
 ```
