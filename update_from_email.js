@@ -40,6 +40,8 @@ _.run(function () {
         if (res instanceof Array) res = res[0]
         if (!res) break
 
+        console.log("processing an e-mail...")
+
         imap.fetch(res, { headers: { parse: false }, body: true, cb: p1.set }, function () {})
         var fetch = p1.get()
 
