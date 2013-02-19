@@ -49,11 +49,26 @@ _.run(function () {
 
 	require('./login.js')(db, app, process.env.HOST, process.env.ODESK_API_KEY, process.env.ODESK_API_SECRET)
 
-	app.get('/', function (req, res) {
-		if (!req.user)
+	function requireClearnance(user, level) {
+		if (!(user.clearance >= level)) throw new Error("sorry, you don't have enough clearance to access this.")
+	}
+
+	app.all('*', function (req, res, next) {
+		if (!req.user) {
 			res.redirect('/login')
-		else
-			res.sendfile('./index.html')
+		} else {
+			requireClearnance(req.user, 1)
+			next()
+		}
+	})
+
+	app.get('/', function (req, res) {
+		res.sendfile('./index.html')
+	})
+
+	app.get('/admin', function (req, res) {
+		requireClearnance(req.user, 2)
+		res.sendfile('./admin.html')
 	})
 
 	function ungrab(u) {
@@ -74,9 +89,48 @@ _.run(function () {
 			return req.user
 		},
 
+		getUsers : function (arg, req, res) {
+			var u = req.user
+			requireClearnance(u, 2)
+
+			var p = _.promiseErr()
+			db.collection('users').find({}, p.set)
+			return p.get()
+		},
+
+		setPermissions : function (arg, req, res) {
+			var u = req.user
+			requireClearnance(u, 2)
+
+			var admins = _.makeSet(_.trim(arg.admins).split(/[,\s]/))
+			var workers = _.makeSet(_.trim(arg.workers).split(/[,\s]/))
+
+			var p = _.promiseErr()
+			db.collection('users').find({}, p.set)
+			_.each(p.get(), function (u) {
+				if (_.has(admins, u._id)) {
+					db.collection('users').update({ _id : u._id }, { $set : { clearance : 2 }}, p.set)
+					p.get()
+				} else if (_.has(workers, u._id)) {
+					db.collection('users').update({ _id : u._id }, { $set : { clearance : 1 }}, p.set)
+					p.get()
+				} else {
+					db.collection('users').update({ _id : u._id }, { $set : { clearance : 0 }}, p.set)
+					p.get()
+				}
+			})
+			_.each(admins, function (_, _id) {
+				db.collection('users').update({ _id : _id }, { $set : { clearance : 2 }}, { upsert : true }, p.set)
+				p.get()
+			})
+			_.each(_.setSub(workers, admins), function (_, _id) {
+				db.collection('users').update({ _id : _id }, { $set : { clearance : 1 }}, { upsert : true }, p.set)
+				p.get()
+			})
+		},
+
 		grabBatch : function (arg, req, res) {
 			var u = req.user
-			if (!u) throw new Error("must be logged in")
 			var p = _.promiseErr()
 
 			if (!arg) {
@@ -112,7 +166,6 @@ _.run(function () {
 
 		submit : function (arg, req, res) {
 			var u = req.user
-			if (!u) throw new Error("must be logged in")
 			if (!arg.task.match(/^.{0,64}$/)) throw new Error("bad input: " + arg.task)
 			if (!(arg.accept == true || arg.accept == false || arg.accept == null)) throw new Error("bad input: " + arg.accept)
 

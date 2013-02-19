@@ -1,0 +1,141 @@
+<html>
+<head>
+<title>Hello</title>
+<style>
+
+.fill {
+    width: 100%;
+    height: 100%;
+}
+
+table {
+    border-collapse: collapse;
+}
+th, td {
+    padding: 0;
+}
+
+.question {
+}
+
+.category {
+    font-size: small;
+    color: blue;
+}
+
+</style>
+</head>
+<body>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script src="https://raw.github.com/dglittle/myutil/master/u.js"></script>
+<script src="https://raw.github.com/dglittle/myutil/master/jquery.timeago.js"></script>
+<script>
+
+g_version = 1
+
+function onError(msg) {
+    var div = $('<div style="padding:20px"/>')
+    div.append($('<span/>').text(msg || "Oops. Not sure what happened."))
+    div.append($('<br/>'))
+    div.append($('<a href="#"/>').text("Please refresh the page.").click(function (e) {
+        e.preventDefault()
+        location.reload()
+    }))
+    _.dialog(div)
+}
+
+var g_rpc = []
+
+function rpc(func, arg, cb) {
+    if (!func) {
+        var save_rpc = g_rpc
+        g_rpc = []
+        $.ajax({
+            url : '/rpc',
+            type : 'post',
+            data : _.json(_.map(save_rpc, function (e) { return e.payload })),
+            success : function (r) {
+                for (var i = 0; i < r.length; i++) {
+                    save_rpc[i].cb(r[i])
+                }
+            },
+            error : function () {
+                onError()
+            }
+        })
+    } else {
+        if (g_rpc.length == 0) {
+            g_rpc.push({
+                payload : { func : "getVersion" },
+                cb : function (r) {
+                    if (r != g_version) onError('This interface has been updated.')
+                }
+            })
+        }
+        g_rpc.push({
+            payload : { func : func, arg : arg },
+            cb : cb
+        })
+    }
+}
+
+function rpc_getPermissions() {
+    rpc('getUsers', null, function (users) {
+        var div = $('<div/>')
+
+        function listUsers(func) {
+            return _.map(_.filter(users, func), function (u) { return u._id }).join('\n')
+        }
+
+        div.append($('<div/>').text('admins'))
+        var admins = $('<textarea style="width:500px;height:150px"/>')
+        admins.val(listUsers(function (u) { return u.clearance >= 2 }))
+        div.append(admins)
+
+        div.append($('<div/>').text('workers'))
+        var workers = $('<textarea style="width:500px;height:150px"/>')
+        workers.val(listUsers(function (u) { return u.clearance >= 1 }))
+        div.append(workers)
+
+        div.append($('<button/>').text('submit').click(function () {
+            rpc('setPermissions', {
+                admins : admins.val(),
+                workers : workers.val()
+            }, function () {
+                g_output.empty().append($('<div/>').text('success!'))
+            })
+            rpc()
+        }))
+
+        g_output.empty().append(div)
+    })
+}
+
+function rpc_getUser() {
+    rpc('getUser', null, function (user) {
+        g_upperRight.empty()
+        g_user = user
+        var s = 'welcome ' + user.name
+        g_upperRight.text(s)
+        g_upperRight.append($('<button/>').text('change permissions').click(function () {
+            rpc_getPermissions()
+            rpc()
+        }))
+    })
+}
+
+$(function () {
+    g_upperRight = $('<div style="float:right"/>')
+    g_output = $('<div class="fill"/>')
+
+    $('body').append(_.splitVert(0.01, null, g_upperRight, g_output))
+
+    rpc_getUser()
+    rpc_getPermissions()
+    rpc()
+})
+
+</script>
+
+</body>
+</html>

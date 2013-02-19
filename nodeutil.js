@@ -1,6 +1,26 @@
 
 var Fiber = require('fibers')
 
+_.slurp = function (f) {
+    return '' + require('fs').readFileSync(f)
+}
+
+_.save = function (f, s) {
+    require('fs').writeFileSync(f, s)
+}
+
+_.print = function (o) {
+    if (typeof(o) == 'object') {
+        console.log(_.json(o, true))
+    } else {
+        console.log(o)
+    }
+}
+
+_.exit = function () {
+    process.exit(1)
+}
+
 _.md5 = function (s) {
     return require('crypto').createHash('md5').update(s).digest("hex")    
 }

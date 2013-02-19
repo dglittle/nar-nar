@@ -12,19 +12,6 @@ process.on('uncaughtException', function (err) {
 
 require('./u.js')
 require('./nodeutil.js')
-
-function parseCsv(s) {
-    var p = _.promise()
-    var headers = null
-    var rows = []
-    require('csv')().from(s).on('record', function (row) {
-        if (!headers) headers = row
-        else rows.push(_.object(headers, row))
-    }).on('end', p.set)
-    p.get()
-    return rows
-}
-
 _.run(function () {
     var p = _.promiseErr()
     var p1 = _.promise()
@@ -78,13 +65,17 @@ _.run(function () {
     function parseHyperlink(s) {
         return s = eval(s.match(/^=hyperlink\((.*)\)$/)[1])
     }
-    var rows = _.map(parseCsv('' + mo.attachments[0].content), function (r) {
+    var rows = require('./csv.js').parse('' + mo.attachments[0].content, '|', true)
+    if (rows.length > 0 && !rows[0].created_ts_gmt) throw new Error('CSV PARSE ERROR!')
+    var rows = _.map(rows, function (r) {
         return {
-            time: new Date(r.created_ts_gmt).getTime(),
-            username: r.uid,
-            name: r.user_name,
-            img: r.portraiturl == "None" ? null : parseHyperlink(r.portraiturl),
-            obo: parseHyperlink(r.obo_link)
+            time : new Date(r.created_ts_gmt).getTime(),
+            username : r.uid,
+            name : r.user_name,
+            img : r.portraiturl ? parseHyperlink(r.portraiturl) : null,
+            title : r.profiletitle || null,
+            overview : r.profile_overview || null,
+            obo : parseHyperlink(r.obo_link)
         }
     })
 
@@ -92,10 +83,10 @@ _.run(function () {
 
     var db = require('mongojs').connect(process.env.MONGOHQ_URL)
     _.each(rows, function (d) {
-        d._id = _.md5(d.username + d.name + d.img)
+        d._id = _.md5(d.username + d.name + d.img + d.title + d.overview)
         d.availableToGrabAt = 0
-        db.collection('records').insert(d, p.set)
-        p.get()
+        db.collection('records').insert(d, p1.set)
+        p1.get()
     })
 
     // finish with email

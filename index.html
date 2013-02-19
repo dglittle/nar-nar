@@ -88,13 +88,22 @@ function rpc_getUser() {
 }
 
 function drawTask(task) {
-    var img = $('<img style="float:left;min-width:133px;min-height:100px;border:1px solid black"/>').attr('src', task.img || '')
+    var div = $('<div style="margin-top:20px"/>')
 
-    var side = $('<div style="margin-left:10px;min-width:133;float:left"/>')
-    side.append($('<div/>').text(task.name))
-    side.append($('<div/>').text(task.username))
+    div.append($('<img style="float:left;min-width:133px;min-height:100px;border:1px solid black"/>').attr('src', task.img || ''))
+
+    var d2 = $('<div style="float:left;margin-left:10px;width:500px"/>')
+    div.append(d2)
+    d2.append($('<div/>').text(task.name))
+    d2.append($('<div style="color:blue;font-family:monospace"/>').text(task.username))
+
+    if (task.title)
+        d2.append($('<div style="margin-top:10px"/>').text(task.title))
+    if (task.overview)
+        d2.append($('<div style="margin-top:10px"/>').text(task.overview))
+
     var buttons = $('<div style="margin-top:10px"/>')
-    side.append(buttons)
+    d2.append(buttons)
 
     function setAcceptRejectButtons() {
         var div = $('<div/>')
@@ -130,13 +139,9 @@ function drawTask(task) {
         setUndoButton(task.accept ? 'accepted' : 'rejected')
     }
 
-    return _.splitHorz(null, null, img, side, 0).css({
-        float : 'left',
-        'margin-left' : '10px',
-        'margin-right' : '30px',
-        'margin-bottom' : '10px',
-        'margin-top' : '10px',
-    })
+    div.append($('<div style="clear:both"/>'))
+
+    return div
 }
 
 function rpc_grabBatch(forceNew) {
@@ -146,7 +151,7 @@ function rpc_grabBatch(forceNew) {
             div.append(drawTask(task))
         })
         div.append($('<div style="clear:both"/>'))
-        div.append($('<button style="margin:10px;width:133px;height:4em;background:lightgreen"/>').html('done, grab&nbsp;more&nbsp;tasks').click(function () {
+        div.append($('<button style="margin-top:20px;width:133px;height:4em;background:yellow"/>').html('done, grab&nbsp;more&nbsp;tasks').click(function () {
             rpc_grabBatch(true)
             rpc()
         }))

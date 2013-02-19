@@ -11,9 +11,7 @@
     "connect-mongo": "*",
 
     "imap": "*",
-    "mailparser": "*",
-
-    "csv": "*"
+    "mailparser": "*"
   },
   "engines": {
     "node": "0.8.x",
