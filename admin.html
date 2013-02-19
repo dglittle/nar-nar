@@ -97,6 +97,7 @@ function rpc_getPermissions() {
         workers.val(listUsers(function (u) { return u.clearance >= 1 }))
         div.append(workers)
 
+        div.append($('<br/>'))
         div.append($('<button/>').text('submit').click(function () {
             rpc('setPermissions', {
                 admins : admins.val(),
