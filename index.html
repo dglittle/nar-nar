@@ -1,6 +1,6 @@
 <html>
 <head>
-<title>Hello</title>
+<title>nar nar</title>
 <style>
 
 .fill {
@@ -107,37 +107,67 @@ function drawTask(task) {
 
     function setAcceptRejectButtons() {
         var div = $('<div/>')
-        div.append($('<button style="height:4em;background:lightgreen"/>').text('accept').click(function () {
-            rpc('submit', { task : task._id, accept : true }, function () {})
+        var notes = null
+        function myRpc() {
+            task.notes = notes.val()
+            rpc('submit', { task : task._id, status : task.status, notes : task.notes }, function () {})
             rpc()
-            setUndoButton('accepted')
+            setButtons()
+        }
+        div.append($('<button style="float:left;height:4em;background:lightgreen"/>').text('accept').click(function () {
+            task.status = 'accepted'
+            myRpc()
         }))
-        div.append($('<button style="height:4em;background:pink"/>').text('reject').click(function () {
+        div.append($('<button style="float:left;height:4em;background:pink"/>').text('reject').click(function () {
+            task.status = 'rejected'
+            myRpc()
+        }))
+        div.append($('<button style="float:left;height:4em;background:lightyellow"/>').html('check in<br/>48 hours').click(function () {
+            task.status = 'check again later'
+            task.availableToGrabAt = _.time() + 1000 * 60 * 60 * 48
+            myRpc()
+        }))
+        var d = $('<div style="float:left"/>')
+        if (task.status == 'check again later') {
+            d.append($('<span style="font-weight:bold"/>').text("it's been 48 hours!"))
+        }
+        d.append($('<button style=""/>').text('open obo').click(function () {
             window.open(task.obo, '_blank')
             window.focus() 
-            rpc('submit', { task : task._id, accept : false }, function () {})
-            rpc()
-            setUndoButton('rejected')
         }))
+        d.append($('<br/>'))
+        d.append($('<span/>').text('notes: '))
+        d.append(notes = $('<input type="text" style="width:250px"/>'))
+        notes.val(task.notes)
+        div.append(d)
+        div.append($('<div style="clear:both"/>'))
         buttons.empty().append(div)
     }
 
-    function setUndoButton(msg) {
+    function setUndoButton() {
         var div = $('<div/>')
-        div.append($('<span style="font-weight:bold;color:' + (msg == 'accepted' ? 'green' : 'red') + '"/>').text(msg))
-        div.append($('<button style="height:4em;background:lightblue"/>').text('undo').click(function () {
-            rpc('submit', { task : task._id, accept : null }, function () {})
+        div.append($('<button style="float:left;height:4em;background:lightblue"/>').text('undo').click(function () {
+            task.status = null
+            rpc('submit', { task : task._id, status : task.status }, function () {})
             rpc()
             setAcceptRejectButtons()
         }))
+        div.append($('<div style="float:left;font-weight:bold;color:' + (task.status == 'accepted' ? 'green' : (task.status == 'rejected') ? 'red' : 'yellow') + '"/>').text(task.status))
+        if (task.notes)
+            div.append($('<div style="float:left"/>').text(', notes: ' + task.notes))
+        div.append($('<div style="clear:both"/>'))
         buttons.empty().append(div)
     }
 
-    if (task.accept == null) {
-        setAcceptRejectButtons()
-    } else {
-        setUndoButton(task.accept ? 'accepted' : 'rejected')
+    function setButtons() {
+        if (task.status == null || (task.status == 'check again later' && _.time() + 1000 * 60 * 60 * 2 > task.availableToGrabAt)) {
+            setAcceptRejectButtons()
+        } else {
+            setUndoButton()
+        }
     }
+
+    setButtons()
 
     div.append($('<div style="clear:both"/>'))
 
@@ -153,20 +183,34 @@ function rpc_grabBatch(forceNew) {
         div.append($('<div style="clear:both"/>'))
         div.append($('<button style="margin-top:20px;width:133px;height:4em;background:yellow"/>').html('done, grab&nbsp;more&nbsp;tasks').click(function () {
             rpc_grabBatch(true)
+            rpc_getTaskCount()
             rpc()
         }))
         g_output.empty().append(div)
     })
 }
 
+function rpc_getTaskCount() {
+    rpc('getTaskCount', null, function (c) {
+        g_upperLeft.text('tasks left: ' + c)
+    })
+}
+
 $(function () {
+    g_upperLeft = $('<div style="float:left">')
     g_upperRight = $('<div style="float:right"/>')
     g_output = $('<div class="fill"/>')
 
-    $('body').append(_.splitVert(0.01, null, g_upperRight, g_output))
+    var top = $('<div/>')
+    top.append($('<div style="float:left;font-weight:bold;color:lightgreen;margin-right:20px"/>').text('nar nar'))
+    top.append(g_upperLeft)
+    top.append(g_upperRight)
+    top.append($('<div style="clear:both"/>'))
+    $('body').append(_.splitVert(0.01, null, top, g_output))
 
     rpc_getUser()
     rpc_grabBatch()
+    rpc_getTaskCount()
     rpc()
 })
 

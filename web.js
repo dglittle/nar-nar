@@ -74,8 +74,8 @@ _.run(function () {
 	function ungrab(u) {
 		var p1 = _.promiseErr()
 		var p2 = _.promiseErr()
-		db.collection('records').update({ grabbedBy : u._id, availableToGrabAt : { $exists : true } }, { $set : { availableToGrabAt : 0 }, $unset : { grabbedBy : null } }, { multi : true }, p1.set)
-		db.collection('records').update({ grabbedBy : u._id, availableToGrabAt : { $exists : false } }, { $unset : { grabbedBy : null } }, { multi : true }, p2.set)
+		db.collection('records').update({ grabbedBy : u._id, status : { $exists : false } }, { $set : { availableToGrabAt : 0 }, $unset : { grabbedBy : null } }, { multi : true }, p1.set)
+		db.collection('records').update({ grabbedBy : u._id, status : { $exists : true } }, { $unset : { grabbedBy : null } }, { multi : true }, p2.set)
 		p1.get()
 		p2.get()
 	}
@@ -129,6 +129,12 @@ _.run(function () {
 			})
 		},
 
+		getTaskCount : function (arg, req, res) {
+			var p = _.promiseErr()
+			db.collection('records').find({ availableToGrabAt : { $lt : _.time() } }).count(p.set)
+			return p.get()
+		},
+
 		grabBatch : function (arg, req, res) {
 			var u = req.user
 			var p = _.promiseErr()
@@ -137,9 +143,9 @@ _.run(function () {
 				db.collection('records').find({ grabbedBy : u._id }).sort({ time : -1 }, p.set)
 				var r = p.get()
 				if (r.length > 0) return r
-			} else {
-				ungrab(u)
 			}
+
+			ungrab(u)
 
 			for (var i = 0; i < 10; i++) {
 				// find stuff to grab
@@ -167,12 +173,13 @@ _.run(function () {
 		submit : function (arg, req, res) {
 			var u = req.user
 			if (!arg.task.match(/^.{0,64}$/)) throw new Error("bad input: " + arg.task)
-			if (!(arg.accept == true || arg.accept == false || arg.accept == null)) throw new Error("bad input: " + arg.accept)
+			if (!(arg.status == null || arg.status.match(/^(accepted|rejected|check again later)$/))) throw new Error("bad input: " + arg.status)
+			if (!(arg.notes == null || arg.notes.match(/^[\s\S]{0,1024}$/))) throw new Error("bad input: " + arg.notes)
 
-			if (arg.accept == null) {
+			if (arg.status == null) {
 				var post = {
 					$unset : {
-						accept : null,
+						status : null,
 						doneBy : null,
 						doneAt : null
 					},
@@ -182,14 +189,17 @@ _.run(function () {
 				}
 			} else {
 				var post = {
-					$unset : {
-						availableToGrabAt : null
-					},
 					$set : {
-						accept : arg.accept,
+						status : arg.status,
+						notes : arg.notes,
 						doneBy : u._id,
 						doneAt : _.time()
 					}
+				}
+				if (arg.status == 'check again later') {
+					post.$set.availableToGrabAt = _.time() + 1000 * 60 * 60 * 48
+				} else {
+					_.ensure(post, '$unset', 'availableToGrabAt', null)
 				}
 			}
 
