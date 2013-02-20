@@ -109,7 +109,11 @@ function drawTask(task) {
         var div = $('<div/>')
         var notes = null
         function myRpc() {
-            task.notes = notes.val()
+            task.notes = notes.val() || null
+            if (!(task.notes == null || task.notes.match(/^[\s\S]{0,1024}$/))) {
+                alert('sorry, the notes field is probably too long')
+                return
+            }
             rpc('submit', { task : task._id, status : task.status, notes : task.notes }, function () {})
             rpc()
             setButtons()
