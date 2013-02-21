@@ -17,7 +17,7 @@ _.run(function () {
 	var db = require('mongojs').connect(process.env.MONGOHQ_URL)
 
 	db.collection('records').ensureIndex({ grabbedBy : 1 }, { background : true })
-	db.collection('records').ensureIndex({ availableToGrabAt : 1, time : -1 }, { background : true })
+	db.collection('records').ensureIndex({ 'status.action' : 1, availableToGrabAt : 1, time : -1 }, { background : true })
 
 	db.createCollection('logs', {capped : true, size : 10000}, function () {})
 	logError = function (err, notes) {
@@ -72,12 +72,11 @@ _.run(function () {
 	})
 
 	function ungrab(u) {
-		var p1 = _.promiseErr()
-		var p2 = _.promiseErr()
-		db.collection('records').update({ grabbedBy : u._id, status : { $exists : false } }, { $set : { availableToGrabAt : 0 }, $unset : { grabbedBy : null } }, { multi : true }, p1.set)
-		db.collection('records').update({ grabbedBy : u._id, status : { $exists : true } }, { $unset : { grabbedBy : null } }, { multi : true }, p2.set)
-		p1.get()
-		p2.get()
+		var p = _.promiseErr()
+		db.collection('records').update({ grabbedBy : u._id, availableToGrabAt : { $lt : _.time() + 1000 * 60 * 60 } }, { $set : { availableToGrabAt : 0 }, $unset : { grabbedBy : null } }, { multi : true }, p.set)
+		p.get()
+		db.collection('records').update({ grabbedBy : u._id }, { $unset : { grabbedBy : null } }, { multi : true }, p.set)
+		p.get()
 	}
 
 	app.all('/rpc', require('./rpc.js')({
@@ -87,6 +86,13 @@ _.run(function () {
 
 		getUser : function (arg, req, res) {
 			return req.user
+		},
+
+		setUser : function (arg, req, res) {
+			var u = req.user
+			var p = _.promiseErr()
+			db.collection('users').update({ _id : u._id }, { $set : _.pick(arg, 'typeA', 'typeB') }, p.set)
+			return p.get()
 		},
 
 		getUsers : function (arg, req, res) {
@@ -130,16 +136,25 @@ _.run(function () {
 		},
 
 		getTaskCount : function (arg, req, res) {
+			var ret = {}
+
 			var p = _.promiseErr()
-			db.collection('records').find({ availableToGrabAt : { $lt : _.time() } }).count(p.set)
-			return p.get()
+			db.collection('records').find({ 'status.action' : { $exists : false}, availableToGrabAt : { $lt : _.time() } }).count(p.set)
+			ret.typeA = p.get()
+
+			db.collection('records').find({ 'status.action' : 'warn', availableToGrabAt : { $lt : _.time() } }).count(p.set)
+			ret.typeB = p.get()
+
+			return ret
 		},
 
 		grabBatch : function (arg, req, res) {
 			var u = req.user
 			var p = _.promiseErr()
+			if (arg.typeA == null) arg.typeA = u.typeA
+			if (arg.typeB == null) arg.typeB = u.typeB
 
-			if (!arg) {
+			if (!arg.forceNew) {
 				db.collection('records').find({ grabbedBy : u._id }).sort({ time : -1 }, p.set)
 				var r = p.get()
 				if (r.length > 0) return r
@@ -147,14 +162,24 @@ _.run(function () {
 
 			ungrab(u)
 
+			if (arg.typeA == false && arg.typeB == false)
+				return []
+
 			for (var i = 0; i < 10; i++) {
 				// find stuff to grab
-				db.collection('records').find({ availableToGrabAt : { $lt : _.time() } }).sort({ availableToGrabAt : 1, time : -1 }).limit(10, p.set)
+				var $or = []
+				if (arg.typeA != false)
+					$or.push({ 'status.action' : { $exists : false } })
+				if (arg.typeB != false)
+					$or.push({ 'status.action' : 'warn' })
+
+				db.collection('records').find({ $or : $or, availableToGrabAt : { $lt : _.time() } }).sort({ 'status.action' : 1, availableToGrabAt : 1, time : -1 }).limit(10, p.set)
 				var r = p.get()
 
 				// grab them
 				db.collection('records').update({
 					_id : { $in : _.map(r, function (e) { return e._id }) },
+					$or : $or,
 					availableToGrabAt : { $lt : _.time() }
 				}, { $set : {
 					availableToGrabAt : _.time() + 1000 * 60 * 60,
@@ -172,39 +197,34 @@ _.run(function () {
 
 		submit : function (arg, req, res) {
 			var u = req.user
-			if (!arg.task.match(/^.{0,64}$/)) throw new Error("bad input: " + arg.task)
-			if (!(arg.status == null || arg.status.match(/^(accepted|rejected|check again later)$/))) throw new Error("bad input: " + arg.status)
-			if (!(arg.notes == null || arg.notes.match(/^[\s\S]{0,1024}$/))) throw new Error("bad input: " + arg.notes)
+			var task = arg
+			if (task.status.action == 'warn')
+				// set again since we don't trust the client's time
+				task.status.warnUntil = _.time() + 1000 * 60 * 60 * 48
 
-			if (arg.status == null) {
-				var post = {
-					$unset : {
-						status : null,
-						doneBy : null,
-						doneAt : null
-					},
-					$set : {
-						availableToGrabAt : _.time() + 1000 * 60 * 60,
-					}
-				}
-			} else {
-				var post = {
-					$set : {
+			var post = {
+				$set : {
+					status : task.status
+				},
+				$push : {
+					history : {
 						status : arg.status,
-						notes : arg.notes,
-						doneBy : u._id,
-						doneAt : _.time()
+						by : u._id,
+						at : _.time()
 					}
 				}
-				if (arg.status == 'check again later') {
-					post.$set.availableToGrabAt = _.time() + 1000 * 60 * 60 * 48
-				} else {
-					_.ensure(post, '$unset', 'availableToGrabAt', null)
-				}
+			}
+			if (task.status.action == 'warn') {
+				post.$set.availableToGrabAt = task.status.warnUntil
+			} else if (task.status) {
+				post.$unset = {}
+				post.$unset.availableToGrabAt = null
+			} else {
+				post.$set.availableToGrabAt = _.time() + 1000 * 60 * 60
 			}
 
 			db.collection('records').update({
-				_id : arg.task,
+				_id : task._id,
 				grabbedBy : u._id
 			}, post)
 		}
