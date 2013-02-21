@@ -43,6 +43,7 @@ _.run(function () {
 		cookie : { maxAge : 24 * 60 * 60 * 1000 },
 		store : new MongoStore({
 			url : process.env.MONGOHQ_URL,
+			auto_reconnect : true,
 			clear_interval : 3600
 		})
 	}))
