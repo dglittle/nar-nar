@@ -154,7 +154,7 @@ function drawTask(task) {
                 b.css('font-weight', 'bold')
                 b.css('border-style', 'none')
                 b.click(function () {
-                    delete task.status
+                    task.status = {}
                     redraw()
 
                     rpc('submit', task)
