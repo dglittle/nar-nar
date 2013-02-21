@@ -218,7 +218,7 @@ _.run(function () {
 			}
 			if (task.status.action == 'warn') {
 				post.$set.availableToGrabAt = task.status.warnUntil
-			} else if (task.status) {
+			} else if (task.status.action) {
 				post.$unset = {}
 				post.$unset.availableToGrabAt = null
 			} else {
