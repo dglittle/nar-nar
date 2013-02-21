@@ -51,7 +51,8 @@ _.run(function () {
 	require('./login.js')(db, app, process.env.HOST, process.env.ODESK_API_KEY, process.env.ODESK_API_SECRET)
 
 	function requireClearnance(user, level) {
-		if (!(user.clearance >= level)) throw new Error("sorry, you don't have enough clearance to access this.")
+		if (!(user.clearance >= level))
+			throw new Error("sorry " + user._id + ", you must be given permission to access this site.")
 	}
 
 	app.all('*', function (req, res, next) {
@@ -238,6 +239,11 @@ _.run(function () {
 		})
 		next(err)
 	})
+
+	app.use(express.errorHandler({
+		dumpExceptions: true,
+		showStack: true
+	}))
 
 	app.listen(process.env.PORT, function() {
 		console.log("go to " + process.env.HOST)
