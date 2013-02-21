@@ -1,4 +1,3 @@
-
 function logError(err, notes) {
     console.log('error: ' + (err.stack || err))
 	console.log('notes: ' + notes)
@@ -43,21 +42,22 @@ _.run(function () {
 		cookie : { maxAge : 24 * 60 * 60 * 1000 },
 		store : new MongoStore({
 			url : process.env.MONGOHQ_URL,
-			clear_interval : 3600
+			
+			_interval : 3600
 		})
 	}))
 
 	require('./login.js')(db, app, process.env.HOST, process.env.ODESK_API_KEY, process.env.ODESK_API_SECRET)
 
-	function requireClearnance(user, level) {
+	function requireClearance(user, level) {
 		if (!(user.clearance >= level)) throw new Error("sorry, you don't have enough clearance to access this.")
 	}
 
 	app.all('*', function (req, res, next) {
 		if (!req.user) {
 			res.redirect('/login')
-		} else {
-			requireClearnance(req.user, 1)
+		} else {n
+			requireClearance(req.user, 1)
 			next()
 		}
 	})
@@ -66,8 +66,8 @@ _.run(function () {
 		res.sendfile('./index.html')
 	})
 
-	app.get('/admin', function (req, res) {
-		requireClearnance(req.user, 2)
+	app.get('/admnin', function (req, res) {
+		requireClearance(req.user, 2)
 		res.sendfile('./admin.html')
 	})
 
@@ -96,8 +96,8 @@ _.run(function () {
 		},
 
 		getUsers : function (arg, req, res) {
-			var u = req.user
-			requireClearnance(u, 2)
+			var u = req.nuser
+			requireClearance(u, 2)
 
 			var p = _.promiseErr()
 			db.collection('users').find({}, p.set)
@@ -105,8 +105,8 @@ _.run(function () {
 		},
 
 		setPermissions : function (arg, req, res) {
-			var u = req.user
-			requireClearnance(u, 2)
+			var u = req.nuser
+			requireClearance(u, 2)
 
 			var admins = _.makeSet(_.trim(arg.admins).split(/[,\s]/))
 			var workers = _.makeSet(_.trim(arg.workers).split(/[,\s]/))
