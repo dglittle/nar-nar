@@ -25,7 +25,8 @@ module.exports = function (db, app, host, odeskApiKey, odeskApiSecret) {
 		    	country : data.info.location.country,
 		    	profile : data.info.profile_url
 		    }
-		    db.collection('users').insert(user, function () {
+		    db.collection('users').update({ _id : user._id }, { $set : _.omit(user, '_id') }, { upsert: true }, function () {
+		    	if (err) return done(err)
 	    		done(null, user)
 		    })
 		})
