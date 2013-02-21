@@ -123,7 +123,7 @@ function drawTask(task) {
             return div
         }
 
-        div.append(drawCheckbox('img', $('<img style="width:100px;height:100px" />').attr('src', task.img)).css('float', 'left'))
+        div.append(drawCheckbox('img', $('<img style="min-width:100px;height:100px" />').attr('src', task.img)).css('float', 'left'))
         var d = $('<div style="float:left"/>')
         d.append(drawCheckbox('name', $('<div/>').text(task.name)))
         d.append(drawCheckbox('username', $('<div style="font-family:monospace"/>').text(task.username)))
