@@ -208,13 +208,13 @@ function rpc_grabBatch(forceNew, ungrab) {
         })
         div.append($('<div style="clear:both;height:10px"/>'))
         div.append($('<input style="float:left;margin:5px" type="checkbox"/>').css('opacity', '0'))
-        div.append($('<button style="float:left;margin:20px;width:133px;height:4em;"/>').html('grab more tasks').click(function () {
+        div.append($('<button style="float:left;margin:20px;width:133px;height:4em;"/>').html('done,<br/>grab more tasks').click(function () {
             rpc_grabBatch(true)
             rpc_getTaskCount()
             rpc()
         }))
         if (tasks.length > 0) {
-            div.append($('<button style="float:left;margin:20px;width:133px;height:4em;"/>').html('release tasks').click(function () {
+            div.append($('<button style="float:left;margin:20px;width:133px;height:4em;"/>').html('release remaining tasks').click(function () {
                 rpc_grabBatch(null, true)
                 rpc_getTaskCount()
                 rpc()
