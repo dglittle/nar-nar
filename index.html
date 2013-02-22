@@ -137,10 +137,10 @@ function drawTask(task) {
         div.append(drawExtra('title'))
         div.append(drawExtra('overview'))
 
-        function drawPushbutton(value, color, cb, undo) {
+        function drawPushbutton(value, color, cb, text) {
             var div = $('<div style="float:left;margin:5px"/>')
             var b
-            div.append(b = $('<button style="float:left;height:3em;width:5.5em;"/>').text(value))
+            div.append(b = $('<button style="float:left;height:3em;width:5.5em;"/>').html(text || value))
             if (task.status.action != value) {
                 b.click(function () {
                     cb()
@@ -181,12 +181,17 @@ function drawTask(task) {
                 task.status.action = 'suspend'
             }))
         } else {
-            div.append(drawPushbutton('warn', 'red', function () {
+            div.append(drawPushbutton('warn', 'rgb(199,87,69)', function () {
                 openObo()
                 task.status.action = 'warn'
                 task.status.warnUntil = _.time() + 1000 * 60 * 60 * 48
             }))
         }
+
+        div.append(drawPushbutton('close', 'rgb(199,87,69)', function () {
+            openObo()
+            task.status.action = 'close'
+        }, 'close<br/>account'))
 
         div.append($('<div style="clear:both"/>'))
     }
@@ -195,19 +200,26 @@ function drawTask(task) {
     return div
 }
 
-function rpc_grabBatch(forceNew) {
-    rpc('grabBatch', { forceNew : forceNew, typeA : g_user.typeA, typeB : g_user.typeB }, function (tasks) {
+function rpc_grabBatch(forceNew, ungrab) {
+    rpc('grabBatch', { forceNew : forceNew, ungrab : ungrab, typeA : g_user.typeA, typeB : g_user.typeB }, function (tasks) {
         var div = $('<div/>')
         _.each(tasks, function (task) {
             div.append(drawTask(task))
         })
         div.append($('<div style="clear:both;height:10px"/>'))
         div.append($('<input style="float:left;margin:5px" type="checkbox"/>').css('opacity', '0'))
-        div.append($('<button style="margin:20px;width:133px;height:4em;"/>').html('done, grab&nbsp;more&nbsp;tasks').click(function () {
+        div.append($('<button style="float:left;margin:20px;width:133px;height:4em;"/>').html('grab more tasks').click(function () {
             rpc_grabBatch(true)
             rpc_getTaskCount()
             rpc()
         }))
+        if (tasks.length > 0) {
+            div.append($('<button style="float:left;margin:20px;width:133px;height:4em;"/>').html('release tasks').click(function () {
+                rpc_grabBatch(null, true)
+                rpc_getTaskCount()
+                rpc()
+            }))
+        }
         g_output.empty().append(div)
         $('html, body').animate({scrollTop:0}, 'fast');
     })

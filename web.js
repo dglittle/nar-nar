@@ -156,6 +156,11 @@ _.run(function () {
 			if (arg.typeA == null) arg.typeA = u.typeA
 			if (arg.typeB == null) arg.typeB = u.typeB
 
+			if (arg.ungrab) {
+				ungrab(u)
+				return []
+			}
+
 			if (!arg.forceNew) {
 				db.collection('records').find({ grabbedBy : u._id }).sort({ time : -1 }, p.set)
 				var r = p.get()
