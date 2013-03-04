@@ -13,7 +13,7 @@ module.exports = function (funcs) {
             }
             var body = _.json(output) || "null"
             res.writeHead(200, {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/json; charset=utf-8',
                 'Content-Length': Buffer.byteLength(body)
             })
             res.end(body)
