@@ -66,9 +66,6 @@ _.run(function () {
 
         // parse csv
 
-        function parseHyperlink(s) {
-            return s = eval(s.match(/^=hyperlink\((.*)\)$/)[1])
-        }
         var rows = require('./csv.js').parse('' + mo.attachments[0].content, '|', true)
         if (rows.length > 0 && !rows[0].created_ts_gmt) throw new Error('CSV PARSE ERROR!')
 
