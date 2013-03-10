@@ -1,7 +1,7 @@
 
 var Fiber = require('fibers')
 
-_.slurp = function (f) {
+_.read = _.slurp = function (f) {
     return '' + require('fs').readFileSync(f)
 }
 

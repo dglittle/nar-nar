@@ -27,7 +27,7 @@ body { margin-left: 20px; margin-top: 5px; padding: 0; }
 <script src="https://raw.github.com/dglittle/myutil/master/jquery.timeago.js"></script>
 <script>
 
-g_version = 1
+g_version = 2
 
 function onError(msg) {
     var div = $('<div style="padding:20px"/>')
@@ -107,6 +107,7 @@ function drawTask(task) {
                 if (task.status.action == 'accept') delete task.status.action
                 redraw()
 
+                task.msg = (task.status[field] ? "checked" : "unchecked") + " " + field
                 rpc('submit', task)
                 rpc()
             }))
@@ -146,6 +147,7 @@ function drawTask(task) {
                     cb()
                     redraw()
 
+                    task.msg = 'pressed ' + value
                     rpc('submit', task)
                     rpc()
                 })
@@ -157,6 +159,7 @@ function drawTask(task) {
                     task.status = {}
                     redraw()
 
+                    task.msg = 'unpressed ' + value
                     rpc('submit', task)
                     rpc()
                 })

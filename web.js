@@ -81,9 +81,41 @@ _.run(function () {
 		p.get()
 	}
 
+	function enrichBatch(r) {
+		var p = _.promise()
+		var remaining = r.length
+		_.each(r, function (r) {
+			if (r.profileKey) {
+				_.run(function () {
+					var profile = _.unJson(_.wget('http://www.odesk.com/api/profiles/v1/providers/' + r.profileKey + '.json')).profile
+
+					r.name = profile.dev_full_name || null
+					r.img = profile.dev_portrait_100 || null
+					r.title = profile.dev_profile_title || null
+					r.overview = profile.dev_blurb || null
+
+					remaining--
+					if (remaining <= 0) p.set()
+					//p.set()
+				})
+				//p.get()
+			}
+		})
+		if (remaining <= 0) p.set()
+		p.get()
+	}
+
+	function recordEvent(u, msg, e) {
+		e = e || {}
+		e.msg = msg
+		e.by = u._id
+		e.at = _.time()
+		db.collection('history').insert(e, function () {})
+	}
+
 	app.all('/rpc', require('./rpc.js')({
 		getVersion : function () {
-			return 1
+			return 2
 		},
 
 		getUser : function (arg, req, res) {
@@ -158,13 +190,17 @@ _.run(function () {
 
 			if (arg.ungrab) {
 				ungrab(u)
+				recordEvent(u, 'released batch')
 				return []
 			}
 
 			if (!arg.forceNew) {
 				db.collection('records').find({ grabbedBy : u._id }).sort({ time : -1 }, p.set)
 				var r = p.get()
-				if (r.length > 0) return r
+				if (r.length > 0) {
+					enrichBatch(r)
+					return r
+				}
 			}
 
 			ungrab(u)
@@ -197,7 +233,14 @@ _.run(function () {
 				// find what we ended up grabbing
 				db.collection('records').find({ grabbedBy : u._id }).sort({ time : -1 }, p.set)
 				var r = p.get()
-				if (r.length > 0) return r
+
+				if (r.length > 0) {
+					enrichBatch(r)
+					recordEvent(u, 'grabbed batch', {
+						batch : r
+					})
+					return r
+				}
 			}
 			return []
 		},
@@ -212,13 +255,6 @@ _.run(function () {
 			var post = {
 				$set : {
 					status : task.status
-				},
-				$push : {
-					history : {
-						status : arg.status,
-						by : u._id,
-						at : _.time()
-					}
 				}
 			}
 			if (task.status.action == 'warn') {
@@ -234,6 +270,8 @@ _.run(function () {
 				_id : task._id,
 				grabbedBy : u._id
 			}, post)
+
+			recordEvent(u, task.msg, { task : _.omit(task, 'msg') })
 		}
 	}))
 
