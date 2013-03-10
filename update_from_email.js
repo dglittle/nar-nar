@@ -72,18 +72,11 @@ _.run(function () {
         var rows = require('./csv.js').parse('' + mo.attachments[0].content, '|', true)
         if (rows.length > 0 && !rows[0].created_ts_gmt) throw new Error('CSV PARSE ERROR!')
 
-        var portraiturlKey = _.find(_.keys(rows[0]), function (e) { return e.match(/portrait/i) })
-
         var rows = _.map(rows, function (r) {
             return {
-                time : new Date(r.created_ts_gmt).getTime(),
-                username : r.uid,
-                name : r.user_name,
-                img : r[portraiturlKey] ? parseHyperlink(r[portraiturlKey]) : null,
-                title : r.profiletitle || null,
-                overview : r.profile_overview || null,
-                obo : parseHyperlink(r.obo_link),
-                profileKey : r.profile_key
+                _id : r.uid,
+                profileKey : r.profile_key,
+                time : new Date(r.created_ts_gmt).getTime()
             }
         })
 
@@ -91,8 +84,6 @@ _.run(function () {
 
         var db = require('mongojs').connect(process.env.MONGOHQ_URL)
         _.each(rows, function (d) {
-            d._id = d.username
-            d.new_id = true
             d.availableToGrabAt = 0
 
             db.collection('records').insert(d, p1.set)
