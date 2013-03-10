@@ -89,6 +89,8 @@ _.run(function () {
 				_.run(function () {
 					var profile = _.unJson(_.wget('http://www.odesk.com/api/profiles/v1/providers/' + r.profileKey + '.json')).profile
 
+					r.username = r._id
+					r.obo = process.env.OBO_BASE_URL + r._id
 					r.name = profile.dev_full_name || null
 					r.img = profile.dev_portrait_100 || null
 					r.title = profile.dev_profile_title || null
