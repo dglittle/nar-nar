@@ -82,7 +82,8 @@ _.run(function () {
                 img : r[portraiturlKey] ? parseHyperlink(r[portraiturlKey]) : null,
                 title : r.profiletitle || null,
                 overview : r.profile_overview || null,
-                obo : parseHyperlink(r.obo_link)
+                obo : parseHyperlink(r.obo_link),
+                profileKey : r.profile_key
             }
         })
 
@@ -90,10 +91,19 @@ _.run(function () {
 
         var db = require('mongojs').connect(process.env.MONGOHQ_URL)
         _.each(rows, function (d) {
-            d._id = _.md5(d.username + d.name + d.img + d.title + d.overview)
+            d._id = d.username
+            d.new_id = true
             d.availableToGrabAt = 0
+
             db.collection('records').insert(d, p1.set)
-            p1.get()
+            var e = p1.get()
+            if (e) {
+                if (e.name == 'MongoError' && e.code == 11000) {
+                    // fine, it was already there
+                } else {
+                    throw e
+                }
+            }
         })
 
         // finish with email
