@@ -119,24 +119,30 @@ _.run(function () {
 		_.each(r, function (r) {
 			if (r.profileKey) {
 				_.run(function () {
-					var profile = _.unJson(_.wget('http://www.odesk.com/api/profiles/v1/providers/' + r.profileKey + '.json')).profile
-
-					r.username = r._id
-					r.obo = process.env.OBO_BASE_URL + r._id
-					r.name = profile.dev_full_name || null
-					r.img = profile.dev_portrait_100 || null
-					r.title = profile.dev_profile_title || null
-					r.overview = profile.dev_blurb || null
-
+					var profile = _.wget('http://www.odesk.com/api/profiles/v1/providers/' + r.profileKey + '.json')
+					try {
+						profile = _.unJson(profile).profile
+						r.username = r._id
+						r.obo = process.env.OBO_BASE_URL + r._id
+						r.name = profile.dev_full_name || null
+						r.img = profile.dev_portrait_100 || null
+						r.title = profile.dev_profile_title || null
+						r.overview = profile.dev_blurb || null
+					} catch (e) {
+						var p2 = _.promiseErr()
+						db.records.remove({ _id : r._id }, p2.set)
+						p2.get()
+						db.collection('bads').insert(r, p2.set)
+						p2.get()
+					}
 					remaining--
 					if (remaining <= 0) p.set()
-					//p.set()
 				})
-				//p.get()
 			}
 		})
 		if (remaining <= 0) p.set()
 		p.get()
+		return _.filter(r, function (r) { return r.username })
 	}
 
 	function recordEvent(u, msg, e) {
@@ -232,8 +238,7 @@ _.run(function () {
 				db.collection('records').find({ grabbedBy : u._id }).sort({ time : -1 }, p.set)
 				var r = p.get()
 				if (r.length > 0) {
-					enrichBatch(r)
-					return r
+					return enrichBatch(r)
 				}
 			}
 
@@ -269,7 +274,7 @@ _.run(function () {
 				var r = p.get()
 
 				if (r.length > 0) {
-					enrichBatch(r)
+					r = enrichBatch(r)
 					recordEvent(u, 'grabbed batch', {
 						batch : r
 					})
