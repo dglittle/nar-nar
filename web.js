@@ -113,35 +113,42 @@ _.run(function () {
 		p.get()
 	}
 
-	function enrichBatch(r) {
+	function parallel(funcs) {
 		var p = _.promise()
-		var remaining = r.length
-		_.each(r, function (r) {
-			if (r.profileKey) {
-				_.run(function () {
-					var profile = _.wget('http://www.odesk.com/api/profiles/v1/providers/' + r.profileKey + '.json')
-					try {
-						profile = _.unJson(profile).profile
-						r.username = r._id
-						r.obo = process.env.OBO_BASE_URL + r._id
-						r.name = profile.dev_full_name || null
-						r.img = profile.dev_portrait_100 || null
-						r.title = profile.dev_profile_title || null
-						r.overview = profile.dev_blurb || null
-					} catch (e) {
-						var p2 = _.promiseErr()
-						db.records.remove({ _id : r._id }, p2.set)
-						p2.get()
-						db.collection('bads').insert(r, p2.set)
-						p2.get()
-					}
-					remaining--
-					if (remaining <= 0) p.set()
-				})
-			}
+		var remaining = funcs.length
+		_.each(funcs, function (f) {
+			_.run(function () {
+				f()
+				remaining--
+				if (remaining <= 0) p.set()
+			})
 		})
 		if (remaining <= 0) p.set()
 		p.get()
+	}
+
+	function enrichBatch(r) {
+		parallel(_.map(r, function (r) {
+			return function () {
+				var profile = _.wget('http://www.odesk.com/api/profiles/v1/providers/' + r.profileKey + '.json')
+				try {
+					profile = _.unJson(profile).profile
+					r.username = r._id
+					r.obo = process.env.OBO_BASE_URL + r._id
+					r.name = profile.dev_full_name || null
+					r.img = profile.dev_portrait_100 || null
+					r.title = profile.dev_profile_title || null
+					r.overview = profile.dev_blurb || null
+					if (!r.name) throw "no name"
+				} catch (e) {
+					var p = _.promiseErr()
+					db.records.remove({ _id : r._id }, p.set)
+					p.get()
+					db.collection('bads').insert(r, p.set)
+					p.get()
+				}
+			}
+		}))
 		return _.filter(r, function (r) { return r.username })
 	}
 
