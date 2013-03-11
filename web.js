@@ -14,7 +14,7 @@ require('./u.js')
 require('./nodeutil.js')
 _.run(function () {
 
-	var db = require('mongojs').connect(process.env.MONGOHQ_URL)
+	var db = require('mongojs').connect(process.env.MONGOHQ_URL, ['records', 'users', 'history'])
 
 	db.collection('records').ensureIndex({ grabbedBy : 1 }, { background : true })
 	db.collection('records').ensureIndex({ 'status.action' : 1, availableToGrabAt : 1, time : -1 }, { background : true })
@@ -54,6 +54,38 @@ _.run(function () {
 		if (!(user.clearance >= level))
 			throw new Error("sorry " + user._id + ", you must be given permission to access this site.")
 	}
+
+	app.all('/add', function (req, res) {
+		_.run(function () {
+			var t = req.query.created_ts_gmt
+			if (!t) {
+				t = _.time()
+			} else if (t.match(/^-?\d+$/)) {
+				t = parseInt(t)
+			} else {
+				t = new Date(t).getTime()
+			}
+			if (!req.query.uid) throw new Error('uid required')
+			if (!req.query.profile_key) throw new Error('profile_key required')
+			var p = _.promise()
+	        db.records.insert({
+				_id : req.query.uid,
+				profileKey : req.query.profile_key,
+				time : t,
+	            availableToGrabAt : 0
+			}, p.set)
+	        var e = p.get()
+	        if (e) {
+	            if (e.name == 'MongoError' && e.code == 11000) {
+	                res.send("already exists")
+	            } else {
+	                throw e
+	            }
+	        } else {
+	        	res.send("added")
+	        }
+	    })
+	})
 
 	app.all('*', function (req, res, next) {
 		if (!req.user) {
