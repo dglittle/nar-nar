@@ -187,7 +187,7 @@ function drawTask(task) {
             div.append(drawPushbutton('warn', 'rgb(199,87,69)', function () {
                 openObo()
                 task.status.action = 'warn'
-                task.status.warnUntil = _.time() + 1000 * 60 * 60 * 48
+                task.status.warnUntil = _.time() + 1000 * 60 * 60 * 24 * 5
             }))
         }
 

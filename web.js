@@ -295,8 +295,7 @@ _.run(function () {
 			var u = req.user
 			var task = arg
 			if (task.status.action == 'warn')
-				// set again since we don't trust the client's time
-				task.status.warnUntil = _.time() + 1000 * 60 * 60 * 48
+				task.status.warnUntil = _.time() + 1000 * 60 * 60 * 24 * 5
 
 			var post = {
 				$set : {
