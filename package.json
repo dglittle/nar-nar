@@ -2,7 +2,7 @@
   "name": "february-fire",
   "version": "0.0.1",
   "dependencies": {
-    "express": "2.5.x",
+    "express": "*",
     "mongojs": "*",
     "passport": "*",
     "passport-oauth": "*",
@@ -14,7 +14,7 @@
     "mailparser": "*"
   },
   "engines": {
-    "node": "0.8.x",
-    "npm": "1.1.x"
+    "node": "0.10.*",
+    "npm": "1.2.*"
   }
 }

@@ -1,4 +1,21 @@
 
+function defaultEnv(key, val) {
+    if (!process.env[key])
+        process.env[key] = val
+}
+defaultEnv("PORT", 5000)
+defaultEnv("HOST", "http://localhost:5000")
+defaultEnv("NODE_ENV", "production")
+
+defaultEnv("OBO_BASE_URL", "https://example.com/user/")
+defaultEnv("MONGOHQ_URL", "mongodb://localhost:27017/narnar")
+defaultEnv("SESSION_SECRET", "blahblah")
+defaultEnv("ODESK_API_KEY", "3f448b92c4aaf8918c0106bd164a1656")
+defaultEnv("ODESK_API_SECRET", "e6a71b4f05467054")
+defaultEnv("ADD_KEY", "7dhfywfjyrxhonizdfku3kuiuise23")
+
+///
+
 function logError(err, notes) {
     console.log('error: ' + (err.stack || err))
 	console.log('notes: ' + notes)
@@ -27,7 +44,7 @@ _.run(function () {
 	}
 
 	var express = require('express')
-	var app = express.createServer()
+	var app = express()
 
 	app.use(express.cookieParser())
 	app.use(function (req, res, next) {
@@ -57,6 +74,7 @@ _.run(function () {
 
 	app.all('/add', function (req, res) {
 		_.run(function () {
+			if (req.query.key != process.env.ADD_KEY) throw new Error('wrong key')
 			var t = req.query.created_ts_gmt
 			if (!t) {
 				t = _.time()
@@ -295,6 +313,7 @@ _.run(function () {
 			var u = req.user
 			var task = arg
 			if (task.status.action == 'warn')
+				// set again since we don't trust the client's time
 				task.status.warnUntil = _.time() + 1000 * 60 * 60 * 24 * 5
 
 			var post = {
