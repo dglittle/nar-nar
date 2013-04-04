@@ -34,7 +34,7 @@ _.run(function () {
     imap.search(['UNSEEN', ['SUBJECT', '[MQ-NAR]']], p.set)
     var res = p.get()
     if (res instanceof Array) res = res[0]
-    if (!res) break
+    if (!res) process.exit(1)
 
     console.log("processing an e-mail...")
 
