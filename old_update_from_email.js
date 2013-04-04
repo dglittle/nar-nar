@@ -79,28 +79,26 @@ _.run(function () {
 
         // upload
 
-        // var db = require('mongojs').connect(process.env.MONGOHQ_URL)
-        // _.each(rows, function (d) {
-        //     d.availableToGrabAt = 0
+        var db = require('mongojs').connect(process.env.MONGOHQ_URL)
+        _.each(rows, function (d) {
+            d.availableToGrabAt = 0
 
-        //     db.collection('records').insert(d, p1.set)
-        //     var e = p1.get()
-        //     if (e) {
-        //         if (e.name == 'MongoError' && e.code == 11000) {
-        //             // fine, it was already there
-        //         } else {
-        //             throw e
-        //         }
-        //     }
-        // })
+            db.collection('records').insert(d, p1.set)
+            var e = p1.get()
+            if (e) {
+                if (e.name == 'MongoError' && e.code == 11000) {
+                    // fine, it was already there
+                    _.print("already there")
+                } else {
+                    throw e
+                }
+            }
+        })
 
         // finish with email
 
-        // imap.addFlags(msg.uid, '\\Seen', p.set)
-        // p.get()
-
-        _.print(rows)
-        break
+        imap.addFlags(msg.uid, '\\Seen', p.set)
+        p.get()
     }
 
     process.exit(1)
