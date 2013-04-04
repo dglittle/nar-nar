@@ -88,6 +88,7 @@ _.run(function () {
             if (e) {
                 if (e.name == 'MongoError' && e.code == 11000) {
                     // fine, it was already there
+                    _.print("already there")
                 } else {
                     throw e
                 }
