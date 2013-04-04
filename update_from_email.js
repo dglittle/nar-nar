@@ -38,13 +38,6 @@ _.run(function () {
 
     console.log("processing an e-mail...")
 
-    // mark it as seen here,
-    // since for some reason doing it later will cause an error...
-    // this is a hack, but using e-mail at all is a hack,
-    // and this whole bit of code should be removed soon anyway
-    imap.addFlags(msg.uid, '\\Seen', p.set)
-    p.get()
-
     imap.fetch(res, { headers: { parse: false }, body: true, cb: p1.set }, function () {})
     var fetch = p1.get()
 
@@ -59,6 +52,13 @@ _.run(function () {
         p1.set(Buffer.concat(bufs))          
     })
     var buf = p1.get()
+
+    // mark it as seen here,
+    // since for some reason doing it after the MailParser will cause an error...
+    // this is a hack, but using e-mail at all is a hack,
+    // and this whole bit of code should be removed soon anyway
+    imap.addFlags(msg.uid, '\\Seen', p.set)
+    p.get()
 
     var MailParser = require("mailparser").MailParser
     var mailparser = new MailParser()
