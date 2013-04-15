@@ -74,7 +74,16 @@ _.run(function () {
 
 	app.all('/add', function (req, res) {
 		_.run(function () {
-			if (req.query.key != process.env.ADD_KEY) throw new Error('wrong key')
+			if (req.query.key != process.env.ADD_KEY) {
+				if (req.query.key && req.query.key.length > 5 && process.env.ADD_KEY.indexOf(req.query.key) == 0) {
+					// development key,
+					// don't actually add it,
+					// but say we did
+					res.send("added, I swear!")
+					return
+				}
+				throw new Error('wrong key')
+			}
 			var t = req.query.created_ts_gmt
 			if (!t) {
 				t = _.time()
