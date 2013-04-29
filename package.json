@@ -10,7 +10,7 @@
     "fibers": "*",
     "connect-mongo": "*",
 
-    "imap": "*",
+    "imap": "git://github.com/mscdex/node-imap.git#5610cb90c7",
     "mailparser": "*"
   },
   "engines": {
