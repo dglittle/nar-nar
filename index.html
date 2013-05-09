@@ -128,7 +128,6 @@ function drawTask(task) {
         var d = $('<div style="float:left"/>')
         d.append(drawCheckbox('name', $('<div/>').text(task.name)))
         d.append(drawCheckbox('username', $('<div style="font-family:monospace"/>').text(task.username)))
-        d.append(drawCheckbox('idv', $('<div/>').text('request IDV')))
         div.append(d)
         div.append($('<div style="clear:both"/>'))
         function drawExtra(field) {
@@ -137,6 +136,16 @@ function drawTask(task) {
         }
         div.append(drawExtra('title'))
         div.append(drawExtra('overview'))
+
+        function resetTaskStatus() {
+            if (_.time() > task.status.warnUntil) {
+                task.status = {
+                    warnUntil : task.status.warnUntil
+                }
+            } else {
+                task.status = {}
+            }
+        }
 
         function drawPushbutton(value, color, cb, text) {
             var div = $('<div style="float:left;margin:5px"/>')
@@ -156,7 +165,7 @@ function drawTask(task) {
                 b.css('font-weight', 'bold')
                 b.css('border-style', 'none')
                 b.click(function () {
-                    task.status = {}
+                    resetTaskStatus()
                     redraw()
 
                     task.msg = 'unpressed ' + value
@@ -170,7 +179,8 @@ function drawTask(task) {
         div.append($('<div style="clear:both;"/>'))
         div.append($('<input style="float:left;margin:5px" type="checkbox"/>').css('opacity', '0'))
         div.append(drawPushbutton('accept', 'rgb(0,255,0)', function () {
-            task.status = { action : 'accept' }
+            resetTaskStatus()
+            task.status.action = 'accept'
         }))
 
         function openObo() {
@@ -179,22 +189,21 @@ function drawTask(task) {
         }
 
         if (_.time() > task.status.warnUntil) {
-            div.append(drawPushbutton('suspend', 'red', function () {
+            div.append(drawPushbutton('suspend', 'rgb(199,87,69)', function () {
                 openObo()
                 task.status.action = 'suspend'
             }))
         } else {
-            div.append(drawPushbutton('warn', 'rgb(199,87,69)', function () {
+            div.append(drawPushbutton('set_to_private', 'rgb(199,87,69)', function () {
                 openObo()
-                task.status.action = 'warn'
-                task.status.warnUntil = _.time() + 1000 * 60 * 60 * 24 * 5
-            }))
+                task.status.action = 'set_to_private'
+            }, 'set to<br/>private'))
+            div.append(drawPushbutton('idv', 'rgb(199,87,69)', function () {
+                openObo()
+                task.status.action = 'idv'
+                task.status.warnUntil = _.time() + 1000 * 60 * 60 * 24 * 5                
+            }, 'request<br/>IDV'))
         }
-
-        div.append(drawPushbutton('close', 'rgb(199,87,69)', function () {
-            openObo()
-            task.status.action = 'close'
-        }, 'close<br/>account'))
 
         div.append($('<div style="clear:both"/>'))
     }
@@ -252,7 +261,7 @@ function rpc_getTaskCount() {
         }
 
         div.append(drawCheckbox('typeA', 'new'))
-        div.append(drawCheckbox('typeB', 'warned'))
+        div.append(drawCheckbox('typeB', 'IDV warned'))
         div.append($('<div style="clear:both"/>'))
 
         g_upperLeft.empty().append(div)

@@ -250,7 +250,7 @@ _.run(function () {
 			db.collection('records').find({ 'status.action' : { $exists : false}, availableToGrabAt : { $lt : _.time() } }).count(p.set)
 			ret.typeA = p.get()
 
-			db.collection('records').find({ 'status.action' : 'warn', availableToGrabAt : { $lt : _.time() } }).count(p.set)
+			db.collection('records').find({ 'status.action' : 'idv', availableToGrabAt : { $lt : _.time() } }).count(p.set)
 			ret.typeB = p.get()
 
 			return ret
@@ -287,7 +287,7 @@ _.run(function () {
 				if (arg.typeA != false)
 					$or.push({ 'status.action' : { $exists : false } })
 				if (arg.typeB != false)
-					$or.push({ 'status.action' : 'warn' })
+					$or.push({ 'status.action' : 'idv' })
 
 				db.collection('records').find({ $or : $or, availableToGrabAt : { $lt : _.time() } }).sort({ 'status.action' : 1, availableToGrabAt : 1, time : -1 }).limit(10, p.set)
 				var r = p.get()
@@ -321,7 +321,7 @@ _.run(function () {
 		submit : function (arg, req, res) {
 			var u = req.user
 			var task = arg
-			if (task.status.action == 'warn')
+			if (task.status.action == 'idv')
 				// set again since we don't trust the client's time
 				task.status.warnUntil = _.time() + 1000 * 60 * 60 * 24 * 5
 
@@ -330,7 +330,7 @@ _.run(function () {
 					status : task.status
 				}
 			}
-			if (task.status.action == 'warn') {
+			if (task.status.action == 'idv') {
 				post.$set.availableToGrabAt = task.status.warnUntil
 			} else if (task.status.action) {
 				post.$unset = {}
