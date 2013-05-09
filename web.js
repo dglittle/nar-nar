@@ -189,7 +189,7 @@ _.run(function () {
 
 	app.all('/rpc', require('./rpc.js')({
 		getVersion : function () {
-			return 2
+			return 3
 		},
 
 		getUser : function (arg, req, res) {
