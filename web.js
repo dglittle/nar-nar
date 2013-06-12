@@ -42,6 +42,11 @@ _.run(function () {
 		console.log('notes: ' + _.json(notes))
 		db.collection('logs').insert({ error : '' + (err.stack || err), notes : notes })
 	}
+	logSomething = function (something) {
+		if (typeof(something) == 'string')
+			something = { msg : something }
+		db.collection('logs').insert(something)
+	}
 
 	var express = require('express')
 	var app = express()
@@ -74,6 +79,9 @@ _.run(function () {
 
 	app.all('/add', function (req, res) {
 		_.run(function () {
+
+			logSomething({ type : 'add', query : req.query })
+
 			if (req.query.key != process.env.ADD_KEY) {
 				if (req.query.key && req.query.key.length > 5 && process.env.ADD_KEY.indexOf(req.query.key) == 0) {
 					// development key,
