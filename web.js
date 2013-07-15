@@ -51,6 +51,8 @@ _.run(function () {
 	var express = require('express')
 	var app = express()
 
+	app.use(express.static(__dirname + '/static'))
+
 	app.use(express.cookieParser())
 	app.use(function (req, res, next) {
 		_.run(function () {
