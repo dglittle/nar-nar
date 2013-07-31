@@ -48,6 +48,13 @@ _.run(function () {
 		db.collection('logs').insert(something)
 	}
 
+	db.createCollection('temp', {capped : true, size : 10000}, function () {})
+	tempLog = function (something) {
+		if (typeof(something) == 'string')
+			something = { msg : something }
+		db.collection('temp').insert(something)
+	}
+
 	var express = require('express')
 	var app = express()
 
@@ -178,6 +185,9 @@ _.run(function () {
 					r.overview = profile.dev_blurb || null
 					if (!r.name) throw "no name"
 				} catch (e) {
+
+					tempLog({ 'error' : '' + e, 'profile' : profile })
+
 					var p = _.promiseErr()
 					db.records.remove({ _id : r._id }, p.set)
 					p.get()
