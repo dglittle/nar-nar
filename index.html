@@ -198,11 +198,6 @@ function drawTask(task) {
                 openObo()
                 task.status.action = 'set_to_private'
             }, 'set to<br/>private'))
-            div.append(drawPushbutton('idv', 'rgb(199,87,69)', function () {
-                openObo()
-                task.status.action = 'idv'
-                task.status.warnUntil = _.time() + 1000 * 60 * 60 * 24 * 5                
-            }, 'request<br/>IDV'))
         }
 
         div.append($('<div style="clear:both"/>'))
@@ -261,7 +256,6 @@ function rpc_getTaskCount() {
         }
 
         div.append(drawCheckbox('typeA', 'new'))
-        div.append(drawCheckbox('typeB', 'IDV warned'))
         div.append($('<div style="clear:both"/>'))
 
         g_upperLeft.empty().append(div)
