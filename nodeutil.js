@@ -130,12 +130,16 @@ _.wget = function (url, params, encoding) {
         dataEnc = "utf8"
     }
     
+    var statusCode = 'unknown'
     var p = _.promise()
     var req = require(url.protocol.replace(/:/, '')).request(o, function (res) {
         _.run(function () {
+            statusCode = res.statusCode
             p.set(_.consume(res, encoding))
         })
     })
     req.end(data, dataEnc)
-    return p.get()
+    var ret = p.get()
+    _.wget_statusCode = statusCode
+    return ret
 }

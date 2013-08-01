@@ -186,7 +186,11 @@ _.run(function () {
 					if (!r.name) throw "no name"
 				} catch (e) {
 
-					tempLog({ 'error' : '' + e, 'profile' : profile })
+					tempLog({
+						'error' : '' + e,
+						'profile' : profile,
+						'statusCode' : _.wget_statusCode
+					})
 
 					var p = _.promiseErr()
 					db.records.remove({ _id : r._id }, p.set)
