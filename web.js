@@ -177,18 +177,18 @@ _.run(function () {
 		parallel(_.map(r, function (r) {
 			return function () {
 				try {
-					if (!process.env.ODESK_USER_TOKEN) {
+					//if (!process.env.ODESK_USER_TOKEN) {
 						var profile = _.wget('http://www.odesk.com/api/profiles/v1/providers/' + r.profileKey + '.json')
 						profile = _.unJson(profile).profile
-					} else {
-						var o = new odesk(process.env.ODESK_API_KEY, process.env.ODESK_API_SECRET)
-						o.OAuth.accessToken = process.env.ODESK_USER_TOKEN
-						o.OAuth.accessTokenSecret = process.env.ODESK_USER_TOKEN_SECRET
+					// } else {
+					// 	var o = new odesk(process.env.ODESK_API_KEY, process.env.ODESK_API_SECRET)
+					// 	o.OAuth.accessToken = process.env.ODESK_USER_TOKEN
+					// 	o.OAuth.accessTokenSecret = process.env.ODESK_USER_TOKEN_SECRET
 						
-						var p = _.promiseErr()
-						o.get('profiles/v1/providers/' + r.profileKey, p.set)
-						var profile = p.get().profile
-					}
+					// 	var p = _.promiseErr()
+					// 	o.get('profiles/v1/providers/' + r.profileKey, p.set)
+					// 	var profile = p.get().profile
+					// }
 					r.username = r._id
 					r.obo = process.env.OBO_BASE_URL + r._id
 					r.name = profile.dev_full_name || null
