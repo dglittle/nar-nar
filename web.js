@@ -200,6 +200,7 @@ _.run(function () {
 
 					tempLog({
 						'error' : '' + e,
+						'errorMsg' : '' + (e && e.message),
 						'profile' : profile,
 						'statusCode' : _.wget_statusCode
 					})
