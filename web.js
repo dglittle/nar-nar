@@ -198,9 +198,16 @@ _.run(function () {
 					if (!r.name) throw "no name"
 				} catch (e) {
 
+					var info = ''
+					if (e) {
+						info = _.json(_.map(e, function (v, k) {
+							return "" + v
+						}), true)
+					}
+
 					tempLog({
 						'error' : '' + e,
-						'errorMsg' : '' + (e && e.message),
+						'errorInfo' : info,
 						'profile' : profile,
 						'statusCode' : _.wget_statusCode
 					})
