@@ -188,17 +188,15 @@ function drawTask(task) {
             window.focus() 
         }
 
-        if (_.time() > task.status.warnUntil) {
-            div.append(drawPushbutton('suspend', 'rgb(199,87,69)', function () {
-                openObo()
-                task.status.action = 'suspend'
-            }))
-        } else {
-            div.append(drawPushbutton('set_to_private', 'rgb(199,87,69)', function () {
-                openObo()
-                task.status.action = 'set_to_private'
-            }, 'set to<br/>private'))
-        }
+        div.append(drawPushbutton('set_to_private', 'rgb(199,87,69)', function () {
+            openObo()
+            task.status.action = 'set_to_private'
+        }, 'set to<br/>private'))
+        
+        div.append(drawPushbutton('suspend', 'rgb(199,87,69)', function () {
+            openObo()
+            task.status.action = 'suspend'
+        }))
 
         div.append($('<div style="clear:both"/>'))
     }
