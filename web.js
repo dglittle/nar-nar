@@ -392,7 +392,7 @@ _.run(function () {
 		}
 	}))
 
-	app.get('/report', function (req, res) {
+	app.get(/\/report.*/, function (req, res) {
 		requireClearnance(req.user, 2)
 		_.run(function () {
 			var p = _.promiseErr()
