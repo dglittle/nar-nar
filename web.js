@@ -392,6 +392,117 @@ _.run(function () {
 		}
 	}))
 
+	app.get('/report', function (req, res) {
+		requireClearnance(req.user, 2)
+		_.run(function () {
+			var p = _.promiseErr()
+
+			function objectIdFromTime(timestamp) {
+			    return require('mongojs').ObjectId(Math.floor(timestamp/1000).toString(16) + "0000000000000000")
+			}
+
+			var x = new Date(new Date().toDateString())
+			var endTime = x.getTime() - (1000 * 60 * 60 * 24 * x.getDay())
+			var startTime = endTime - (1000 * 60 * 60 * 24 * 7)
+
+			db.collection('history').find({
+				_id : {
+					$gte : objectIdFromTime(startTime),
+					$lt : objectIdFromTime(endTime)
+				},
+				'task.status.action' : { $exists : true }
+			}).sort({ _id : -1 }, p.set)
+			var xs = p.get()
+
+			var dones = {}
+			var counts = {}
+			var reps = {}
+
+			db.records.find({
+				time : {
+					$gte : startTime,
+					$lt : endTime
+				}
+			}).count(p.set)
+			counts.queued = p.get()
+
+			_.each(xs, function (x) {
+				if (dones[x.task._id]) return
+				dones[x.task._id] = true
+
+				if (!reps[x.by]) {
+					reps[x.by] = {
+						actionCount : 0,
+						samples : []
+					}
+				}
+				var rep = reps[x.by]
+				if (Math.random() < (25 / (rep.actionCount + 1))) {
+					var reasons = []
+					for (var key in x.task.status) {
+						if (key == 'action') continue
+						reasons.push(key)
+					}
+					var info = {
+						date_reviewed : "" + new Date(x.at),
+						rep_who_reviewed : x.by,
+						profile_image : x.task.img,
+						profile_name : x.task.name,
+						userID : x.task.username,
+						profile_title : x.task.title,
+						profile_overview : x.task.overview,
+						action_taken : x.task.status.action,
+						action_reasons : reasons.join(', ')
+					}
+					if (rep.samples.length < 25)
+						rep.samples.push(info)
+					else
+						rep.samples[Math.floor(Math.random() * 25)] = info
+				}
+				rep.actionCount++
+
+				for (var key in x.task.status) {
+					var k = key
+					if (k == 'action') k = x.task.status[k]
+					if (!counts[k]) counts[k] = 0
+					counts[k]++
+				}
+			})
+
+	        function escapeCsv(s) {
+	        	if (!s) return ''
+	            if (s.match(/[,"\n]/))
+	                return '"' + s.replace(/"/g, '""') + '"'
+	            return s
+	        }
+
+			var csv = []
+			_.each(counts, function (v, k) {
+				csv.push(k + ',' + v + '\n')
+			})
+			csv.push('\n')
+			csv.push('rep,actionCount\n')
+			_.each(reps, function (rep, k) {
+				csv.push(k + ',' + rep.actionCount + '\n')
+			})
+			csv.push('\n')
+			csv.push('samples:\n')
+			var headersPrinted = false
+			_.each(reps, function (rep, k) {
+				_.each(rep.samples, function (sample) {
+					if (!headersPrinted) {
+						csv.push(_.keys(sample).join(',') + '\n')
+						headersPrinted = true
+					}
+					csv.push(_.map(_.values(sample), escapeCsv).join(',') + '\n')
+				})
+			})
+
+			res.setHeader('Content-Type', 'text/csv');
+			res.send(csv.join(''))
+		})
+	})
+
 	app.use(function(err, req, res, next) {
 		logError(err, {
 			session : req.session,
