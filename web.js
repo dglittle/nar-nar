@@ -48,13 +48,6 @@ _.run(function () {
 		db.collection('logs').insert(something)
 	}
 
-	db.createCollection('temp', {capped : true, size : 10000}, function () {})
-	tempLog = function (something) {
-		if (typeof(something) == 'string')
-			something = { msg : something }
-		db.collection('temp').insert(something)
-	}
-
 	var express = require('express')
 	var app = express()
 
@@ -180,6 +173,7 @@ _.run(function () {
 					if (!process.env.ODESK_USER_TOKEN) {
 						var profile = _.wget('http://www.odesk.com/api/profiles/v1/providers/' + r.profileKey + '.json')
 						profile = _.unJson(profile).profile
+						r.usedAPI = false
 					} else {
 						var o = new odesk(process.env.ODESK_API_KEY, process.env.ODESK_API_SECRET)
 						o.OAuth.accessToken = process.env.ODESK_USER_TOKEN
@@ -188,33 +182,21 @@ _.run(function () {
 						var p = _.promiseErr()
 						o.get('profiles/v1/providers/' + r.profileKey, p.set)
 						var profile = p.get().profile
+						r.usedAPI = true
 					}
+					if (!profile) throw "fail"
 					r.username = r._id
 					r.obo = process.env.OBO_BASE_URL + r._id
 					r.name = profile.dev_full_name || profile.dev_short_name || null
 					r.img = profile.dev_portrait_100 || null
 					r.title = profile.dev_profile_title || null
 					r.overview = profile.dev_blurb || null
-					if (!r.name) throw "no name"
 				} catch (e) {
-
-					var info = ''
-					if (e) {
-						info = _.json(_.map(e, function (v, k) {
-							return "" + v
-						}), true)
-					}
-
-					tempLog({
-						'error' : '' + e,
-						'errorInfo' : info,
-						'profile' : profile,
-						'statusCode' : _.wget_statusCode
-					})
-
 					var p = _.promiseErr()
 					db.records.remove({ _id : r._id }, p.set)
 					p.get()
+
+					r.badTime = _.time()
 					db.collection('bads').insert(r, p.set)
 					p.get()
 				}
