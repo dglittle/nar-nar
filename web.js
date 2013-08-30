@@ -191,7 +191,7 @@ _.run(function () {
 					}
 					r.username = r._id
 					r.obo = process.env.OBO_BASE_URL + r._id
-					r.name = profile.dev_full_name || null
+					r.name = profile.dev_full_name || profile.dev_short_name || null
 					r.img = profile.dev_portrait_100 || null
 					r.title = profile.dev_profile_title || null
 					r.overview = profile.dev_blurb || null
