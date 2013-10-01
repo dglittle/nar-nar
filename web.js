@@ -419,7 +419,8 @@ _.run(function () {
 					}
 				}
 				var rep = reps[x.by]
-				if (Math.random() < (25 / (rep.actionCount + 1))) {
+				var sampleN = 50
+				if (Math.random() < (sampleN / (rep.actionCount + 1))) {
 					var reasons = []
 					for (var key in x.task.status) {
 						if (key == 'action') continue
@@ -436,10 +437,10 @@ _.run(function () {
 						action_taken : x.task.status.action,
 						action_reasons : reasons.join(', ')
 					}
-					if (rep.samples.length < 25)
+					if (rep.samples.length < sampleN)
 						rep.samples.push(info)
 					else
-						rep.samples[Math.floor(Math.random() * 25)] = info
+						rep.samples[Math.floor(Math.random() * sampleN)] = info
 				}
 				rep.actionCount++
 
